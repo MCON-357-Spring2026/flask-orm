@@ -14,36 +14,34 @@ from src.flask_orm.models import Student, Grade
 
 
 def create_student(name: str, email: str) -> Student:
-    """TODO: Create and commit a Student; handle duplicate email.
-
-    If email is duplicate:
-      - rollback
-      - raise ValueError("duplicate email")
-    """
-    raise NotImplementedError
+    student = Student(name=name, email=email)
+    db.session.add(student)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        raise ValueError("email must be unique")
+    return student
 
 
 def find_student_by_email(email: str) -> Optional[Student]:
-    """TODO: Return Student by email or None."""
-    raise NotImplementedError
+    return Student.query.filter_by(email=email).first()
+
 
 
 def add_grade(student_id: int, assignment_id: int, score: int) -> Grade:
-    """TODO: Add a Grade for the student+assignment and commit.
-
-    If student doesn't exist: raise LookupError
-    If assignment doesn't exist: raise LookupError
-    If duplicate grade: raise ValueError("duplicate grade")
-    """
-    raise NotImplementedError
+    grade = Grade(student_id=student_id, assignment_id=assignment_id, score=score)
+    db.session.add(grade)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        raise ValueError("grade for this student and assignment already exists")
+    return grade
 
 
 def average_percent(student_id: int) -> float:
-    """TODO: Return student's average percent across assignments.
-
-    percent per grade = score / assignment.max_points * 100
-
-    If student doesn't exist: raise LookupError
-    If student has no grades: return 0.0
-    """
-    raise NotImplementedError
+    avg_score = db.session.query(func.avg(Grade.score)).filter_by(student_id=student_id).scalar()
+    if avg_score is None:
+        return 0.0
+    return float(avg_score)
